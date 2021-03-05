@@ -47,9 +47,22 @@ func main() {
 	window.SetFramebufferSizeCallback(FramebufferSizeCallback)
 
 	for !window.ShouldClose() {
-		// Do OpenGl stuff
+		// input
+		processInput(window)
+
+		// rendering commands
+		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
+		gl.Clear(gl.COLOR_BUFFER_BIT)
+
+		// check and call events and swap the buffers
 		window.SwapBuffers()
 		glfw.PollEvents()
+	}
+}
+
+func processInput(w *glfw.Window) {
+	if w.GetKey(glfw.KeyEscape) == glfw.Press {
+		w.SetShouldClose(true)
 	}
 }
 
