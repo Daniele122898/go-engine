@@ -22,8 +22,8 @@ func main() {
 		log.Fatal("failed to initialize glfw:\n", err)
 	}
 	// Add version hints
-	glfw.WindowHint(glfw.VersionMajor, 4)
-	glfw.WindowHint(glfw.VersionMinor, 6)
+	glfw.WindowHint(glfw.ContextVersionMajor, 4)
+	glfw.WindowHint(glfw.ContextVersionMinor, 6)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	// Only needed for mac but we dont care so just keeping it here for future reference
 	//glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
