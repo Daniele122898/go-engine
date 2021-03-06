@@ -17,6 +17,7 @@ func init() {
 
 var (
 	vertexShaderSource = "#version 460 core\n\nlayout (location = 0) in vec3 aPos;\n\nvoid main() {\n    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n}\000"
+	fragmentShaderSource = "#version 460\n\nout vec4 FragColor;\n\nvoid main() {\n    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n}\000"
 )
 
 func main() {
@@ -51,6 +52,51 @@ func main() {
 	// Register callback in case user changes the window size so gl can update the viewport.
 	window.SetFramebufferSizeCallback(FramebufferSizeCallback)
 
+	// Dynamically compile the shaders
+	// -------------------------------
+	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
+	transformedSource := gl.Str(vertexShaderSource)
+	gl.ShaderSource(vertexShader, 1, &transformedSource, nil)
+	gl.CompileShader(vertexShader)
+	// Checking compile status
+	var success int32
+	infoLog := [512]uint8{}
+	gl.GetShaderiv(vertexShader, gl.COMPILE_STATUS, &success)
+	if success == 0 {
+		gl.GetShaderInfoLog(vertexShader, 512, nil, &infoLog[0])
+		log.Fatalf("vertex shader compilation failed %s", gl.GoStr(&infoLog[0]))
+	}
+	fragmentShader := gl.CreateShader(gl.FRAGMENT_SHADER)
+	transformedFragsource := gl.Str(fragmentShaderSource)
+	gl.ShaderSource(fragmentShader, 1, &transformedFragsource, nil)
+	gl.CompileShader(fragmentShader)
+	gl.GetShaderiv(fragmentShader, gl.COMPILE_STATUS, &success)
+	if success == 0 {
+		gl.GetShaderInfoLog(fragmentShader, 512, nil, &infoLog[0])
+		log.Fatalf("fragment shader compilation failed %s", gl.GoStr(&infoLog[0]))
+	}
+
+	// Linking the shaders into a shader program
+	shaderProg := gl.CreateProgram()
+	gl.AttachShader(shaderProg, vertexShader)
+	gl.AttachShader(shaderProg, fragmentShader)
+	gl.LinkProgram(shaderProg)
+	gl.GetShaderiv(shaderProg, gl.LINK_STATUS, &success)
+	if success == 0 {
+		gl.GetProgramInfoLog(shaderProg, 512, nil, &infoLog[0])
+		log.Fatalf("shader programm linking failed %s", gl.GoStr(&infoLog[0]))
+	}
+	// Now delete the shader objects as we already linked them and dont need them
+	gl.DeleteShader(vertexShader)
+	gl.DeleteShader(fragmentShader)
+
+	// Setup Verted data and buffers etc
+	// ------------------------------------
+	// Create a VAO
+	var VAO uint32
+	gl.GenVertexArrays(1, &VAO)
+	gl.BindVertexArray(VAO)
+
 	// Playing around with some triangles
 	// Vertices for 1 triangle starting from bottom left going counter clock wise
 	vertices := [9]float32 {
@@ -67,19 +113,14 @@ func main() {
 	// Calling glBufferData will then copy the defined vertex data into the buffers memory
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices) << 2, unsafe.Pointer(&vertices), gl.STATIC_DRAW)
 
-	// Dynamically compile the shaders
-	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
-	transformedSource := gl.Str(vertexShaderSource)
-	gl.ShaderSource(vertexShader, 1, &transformedSource, nil)
-	gl.CompileShader(vertexShader)
-	// Checking compile status
-	var success int32
-	infoLog := [512]uint8{}
-	gl.GetShaderiv(vertexShader, gl.COMPILE_STATUS, &success)
-	if success == 0 {
-		gl.GetShaderInfoLog(vertexShader, 512, nil, &infoLog[0])
-		log.Fatalf("vertex shader compilation failed %s", gl.GoStr(&infoLog[0]))
-	}
+	// Tell OpenGL how to interpret our vertex data
+	// This uses our VBO because its still bound to ARRAY_BUFFER from before
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3 * 4, unsafe.Pointer(nil))
+	gl.EnableVertexAttribArray(0)
+
+	defer gl.DeleteVertexArrays(1, &VAO)
+	defer gl.DeleteBuffers(1, &VBO)
+	defer gl.DeleteProgram(shaderProg)
 
 	for !window.ShouldClose() {
 		// input
@@ -88,6 +129,13 @@ func main() {
 		// rendering commands
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
+
+		// Draw triangle
+		// We now activate this shader program. Every shader and rendering call after this
+		// will now use this program.
+		gl.UseProgram(shaderProg)
+		gl.BindVertexArray(VAO)
+		gl.DrawArrays(gl.TRIANGLES, 0, 3)
 
 		// check and call events and swap the buffers
 		window.SwapBuffers()
