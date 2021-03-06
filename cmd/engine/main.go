@@ -147,6 +147,13 @@ func processInput(w *glfw.Window) {
 	if w.GetKey(glfw.KeyEscape) == glfw.Press {
 		w.SetShouldClose(true)
 	}
+
+	if w.GetKey(glfw.KeyF) == glfw.Press {
+		gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+	}
+	if w.GetKey(glfw.KeyP) == glfw.Press {
+		gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+	}
 }
 
 func FramebufferSizeCallback(w *glfw.Window, width int, height int) {
