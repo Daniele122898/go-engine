@@ -16,8 +16,8 @@ func init() {
 }
 
 var (
-	vertexShaderSource = "#version 460 core\n\nlayout (location = 0) in vec3 aPos;\n\nvoid main() {\n    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n}\000"
-	fragmentShaderSource = "#version 460\n\nout vec4 FragColor;\n\nvoid main() {\n    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n}\000"
+	vertexShaderSource = "#version 460 core\n\nlayout (location = 0) in vec3 aPos;\n\nout vec4 vertexColor; // specify color output for frag shader\n\nvoid main() {\n    gl_Position = vec4(aPos, 1.0);\n    vertexColor = vec4(aPos, 1);\n}\000"
+	fragmentShaderSource = "#version 460\n\nout vec4 FragColor;\n\nin vec4 vertexColor; // Input from vert shader. Same name and type\n\nvoid main() {\n    FragColor = vertexColor;\n}\000"
 )
 
 func main() {
@@ -182,6 +182,6 @@ func processInput(w *glfw.Window) {
 	}
 }
 
-func FramebufferSizeCallback(w *glfw.Window, width int, height int) {
+func FramebufferSizeCallback(_ *glfw.Window, width int, height int) {
 	gl.Viewport(0,0, int32(width), int32(height))
 }
