@@ -4,6 +4,7 @@ import (
 	"github.com/go-gl/gl/v4.6-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"log"
+	"math"
 	"runtime"
 	"unsafe"
 )
@@ -16,8 +17,8 @@ func init() {
 }
 
 var (
-	vertexShaderSource = "#version 460 core\n\nlayout (location = 0) in vec3 aPos;\n\nout vec4 vertexColor; // specify color output for frag shader\n\nvoid main() {\n    gl_Position = vec4(aPos, 1.0);\n    vertexColor = vec4(aPos, 1);\n}\000"
-	fragmentShaderSource = "#version 460\n\nout vec4 FragColor;\n\nin vec4 vertexColor; // Input from vert shader. Same name and type\n\nvoid main() {\n    FragColor = vertexColor;\n}\000"
+	vertexShaderSource = "#version 460 core\n\nlayout (location = 0) in vec3 aPos;\n\nvoid main() {\n    gl_Position = vec4(aPos, 1.0);\n}\000"
+	fragmentShaderSource = "#version 460\n\nout vec4 FragColor;\n\nuniform vec4 ourColor;\n\nvoid main() {\n    FragColor = ourColor;\n}\000"
 )
 
 func main() {
@@ -159,6 +160,13 @@ func main() {
 		// We now activate this shader program. Every shader and rendering call after this
 		// will now use this program.
 		gl.UseProgram(shaderProg)
+
+		// update the uniform color
+		timeVal := glfw.GetTime()
+		greenVal := math.Sin(timeVal) / 2.0 + 0.5
+		vertexColorLocation := gl.GetUniformLocation(shaderProg, gl.Str("ourColor\000"))
+		gl.Uniform4f(vertexColorLocation, 0, float32(greenVal), 0,1)
+
 		gl.BindVertexArray(VAO)
 		//gl.DrawArrays(gl.TRIANGLES, 0, 3)
 		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, unsafe.Pointer(nil))
