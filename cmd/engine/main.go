@@ -98,20 +98,45 @@ func main() {
 	gl.BindVertexArray(VAO)
 
 	// Playing around with some triangles
-	// Vertices for 1 triangle starting from bottom left going counter clock wise
-	vertices := [9]float32 {
-		-0.5, -0.5, 0.0,
-		 0.5, -0.5, 0.0,
-		 0.0,  0.5, 0.0,
+	//vertices := [18]float32 {
+	//	// first triangle
+	//	 0.5,  0.5, 0.0, // top right
+	//	 0.5, -0.5, 0.0, // bottom right
+	//	-0.5,  0.5, 0.0, // top let
+	//	// second triangle
+	//	 0.5, -0.5, 0.0, // bottom right
+	//	-0.5, -0.5, 0.0, // bottom let
+	//	-0.5,  0.5, 0.0, // top let
+	//}
+
+	// Using Element Buffer objects to not specify verticies twice
+	vertices := [12]float32 {
+		// first triangle
+		0.5,  0.5, 0.0, // top right
+		0.5, -0.5, 0.0, // bottom right
+		-0.5, -0.5, 0.0, // bottom let
+		-0.5,  0.5, 0.0, // top let
 	}
+	indices := [6]int32 {
+		0, 1, 3,   // first triangle
+		1, 2, 3,    // second triangle
+	}
+
 	// Tell opengl to create 1 buffer and pass us the ID
 	var VBO uint32
 	gl.GenBuffers(1, &VBO)
+	// Generate the EBO buffer
+	var EBO uint32
+	gl.GenBuffers(1, &EBO)
 	// We then bind that buffer as a type ARRAY_BUFFER
 	gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
 	// From now on any call on the ARRAY_BUFFER target will configure this bound buffer.
 	// Calling glBufferData will then copy the defined vertex data into the buffers memory
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices) << 2, unsafe.Pointer(&vertices), gl.STATIC_DRAW)
+
+	// Bind EBO
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices) << 2, unsafe.Pointer(&indices), gl.STATIC_DRAW)
 
 	// Tell OpenGL how to interpret our vertex data
 	// This uses our VBO because its still bound to ARRAY_BUFFER from before
@@ -135,7 +160,8 @@ func main() {
 		// will now use this program.
 		gl.UseProgram(shaderProg)
 		gl.BindVertexArray(VAO)
-		gl.DrawArrays(gl.TRIANGLES, 0, 3)
+		//gl.DrawArrays(gl.TRIANGLES, 0, 3)
+		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, unsafe.Pointer(nil))
 
 		// check and call events and swap the buffers
 		window.SwapBuffers()
