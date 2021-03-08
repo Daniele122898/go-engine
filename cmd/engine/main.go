@@ -4,7 +4,6 @@ import (
 	"github.com/go-gl/gl/v4.6-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"log"
-	"math"
 	"runtime"
 	"unsafe"
 )
@@ -17,8 +16,8 @@ func init() {
 }
 
 var (
-	vertexShaderSource = "#version 460 core\n\nlayout (location = 0) in vec3 aPos;\n\nvoid main() {\n    gl_Position = vec4(aPos, 1.0);\n}\000"
-	fragmentShaderSource = "#version 460\n\nout vec4 FragColor;\n\nuniform vec4 ourColor;\n\nvoid main() {\n    FragColor = ourColor;\n}\000"
+	vertexShaderSource = "#version 460 core\n\nlayout (location = 0) in vec3 aPos;\nlayout (location = 1) in vec3 aColor;\n\nout vec3 ourColor;\n\nvoid main() {\n    gl_Position = vec4(aPos, 1.0);\n    ourColor = aColor;\n}\000"
+	fragmentShaderSource = "#version 460\n\nout vec4 FragColor;\n\nin vec3 ourColor;\n\nvoid main() {\n    FragColor = vec4(ourColor, 1.0);\n}\000"
 )
 
 func main() {
@@ -111,12 +110,12 @@ func main() {
 	//}
 
 	// Using Element Buffer objects to not specify verticies twice
-	vertices := [12]float32 {
-		// first triangle
-		0.5,  0.5, 0.0, // top right
-		0.5, -0.5, 0.0, // bottom right
-		-0.5, -0.5, 0.0, // bottom let
-		-0.5,  0.5, 0.0, // top let
+	vertices := [24]float32 {
+		// positions     // colors
+	 	 0.5,  0.5, 0.0, 1.0, 0.0, 0.0, // top right
+		 0.5, -0.5, 0.0, 1.0, 1.0, 0.0, // bottom right
+		-0.5, -0.5, 0.0, 0.0, 1.0, 0.0, // bottom let
+		-0.5,  0.5, 0.0, 0.0, 1.0, 1.0, // top let
 	}
 	indices := [6]int32 {
 		0, 1, 3,   // first triangle
@@ -141,8 +140,11 @@ func main() {
 
 	// Tell OpenGL how to interpret our vertex data
 	// This uses our VBO because its still bound to ARRAY_BUFFER from before
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3 * 4, unsafe.Pointer(nil))
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 6 * 4, unsafe.Pointer(nil))
 	gl.EnableVertexAttribArray(0)
+
+	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6 * 4, gl.PtrOffset(3*4))
+	gl.EnableVertexAttribArray(1)
 
 	defer gl.DeleteVertexArrays(1, &VAO)
 	defer gl.DeleteBuffers(1, &VBO)
@@ -162,10 +164,10 @@ func main() {
 		gl.UseProgram(shaderProg)
 
 		// update the uniform color
-		timeVal := glfw.GetTime()
-		greenVal := math.Sin(timeVal) / 2.0 + 0.5
-		vertexColorLocation := gl.GetUniformLocation(shaderProg, gl.Str("ourColor\000"))
-		gl.Uniform4f(vertexColorLocation, 0, float32(greenVal), 0,1)
+		//timeVal := glfw.GetTime()
+		//greenVal := math.Sin(timeVal) / 2.0 + 0.5
+		//vertexColorLocation := gl.GetUniformLocation(shaderProg, gl.Str("ourColor\000"))
+		//gl.Uniform4f(vertexColorLocation, 0, float32(greenVal), 0,1)
 
 		gl.BindVertexArray(VAO)
 		//gl.DrawArrays(gl.TRIANGLES, 0, 3)
