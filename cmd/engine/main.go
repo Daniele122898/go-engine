@@ -6,6 +6,7 @@ import (
 	"log"
 	"runtime"
 	"unsafe"
+	"voxel/pkg/argonaut/graphics"
 )
 
 // Called first
@@ -14,11 +15,6 @@ func init() {
 	// See documentation for functions that are only allowed to be called from the main thread.
 	runtime.LockOSThread()
 }
-
-var (
-	vertexShaderSource = "#version 460 core\n\nlayout (location = 0) in vec3 aPos;\nlayout (location = 1) in vec3 aColor;\n\nout vec3 ourColor;\n\nvoid main() {\n    gl_Position = vec4(aPos, 1.0);\n    ourColor = aColor;\n}\000"
-	fragmentShaderSource = "#version 460\n\nout vec4 FragColor;\n\nin vec3 ourColor;\n\nvoid main() {\n    FragColor = vec4(ourColor, 1.0);\n}\000"
-)
 
 func main() {
 	log.Println("Starting voxel engine")
@@ -54,41 +50,11 @@ func main() {
 
 	// Dynamically compile the shaders
 	// -------------------------------
-	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
-	transformedSource := gl.Str(vertexShaderSource)
-	gl.ShaderSource(vertexShader, 1, &transformedSource, nil)
-	gl.CompileShader(vertexShader)
-	// Checking compile status
-	var success int32
-	infoLog := [512]uint8{}
-	gl.GetShaderiv(vertexShader, gl.COMPILE_STATUS, &success)
-	if success == 0 {
-		gl.GetShaderInfoLog(vertexShader, 512, nil, &infoLog[0])
-		log.Fatalf("vertex shader compilation failed %s", gl.GoStr(&infoLog[0]))
-	}
-	fragmentShader := gl.CreateShader(gl.FRAGMENT_SHADER)
-	transformedFragsource := gl.Str(fragmentShaderSource)
-	gl.ShaderSource(fragmentShader, 1, &transformedFragsource, nil)
-	gl.CompileShader(fragmentShader)
-	gl.GetShaderiv(fragmentShader, gl.COMPILE_STATUS, &success)
-	if success == 0 {
-		gl.GetShaderInfoLog(fragmentShader, 512, nil, &infoLog[0])
-		log.Fatalf("fragment shader compilation failed %s", gl.GoStr(&infoLog[0]))
+	shader, err := graphics.NewShader("cmd/engine/shaders/simple_vert.glsl", "cmd/engine/shaders/simple_frag.glsl")
+	if err != nil {
+		log.Fatal("shader creation failed", err)
 	}
 
-	// Linking the shaders into a shader program
-	shaderProg := gl.CreateProgram()
-	gl.AttachShader(shaderProg, vertexShader)
-	gl.AttachShader(shaderProg, fragmentShader)
-	gl.LinkProgram(shaderProg)
-	gl.GetShaderiv(shaderProg, gl.LINK_STATUS, &success)
-	if success == 0 {
-		gl.GetProgramInfoLog(shaderProg, 512, nil, &infoLog[0])
-		log.Fatalf("shader programm linking failed %s", gl.GoStr(&infoLog[0]))
-	}
-	// Now delete the shader objects as we already linked them and dont need them
-	gl.DeleteShader(vertexShader)
-	gl.DeleteShader(fragmentShader)
 
 	// Setup Verted data and buffers etc
 	// ------------------------------------
@@ -148,7 +114,7 @@ func main() {
 
 	defer gl.DeleteVertexArrays(1, &VAO)
 	defer gl.DeleteBuffers(1, &VBO)
-	defer gl.DeleteProgram(shaderProg)
+	defer shader.Delete()
 
 	for !window.ShouldClose() {
 		// input
@@ -161,13 +127,7 @@ func main() {
 		// Draw triangle
 		// We now activate this shader program. Every shader and rendering call after this
 		// will now use this program.
-		gl.UseProgram(shaderProg)
-
-		// update the uniform color
-		//timeVal := glfw.GetTime()
-		//greenVal := math.Sin(timeVal) / 2.0 + 0.5
-		//vertexColorLocation := gl.GetUniformLocation(shaderProg, gl.Str("ourColor\000"))
-		//gl.Uniform4f(vertexColorLocation, 0, float32(greenVal), 0,1)
+		gl.UseProgram(shader.Id)
 
 		gl.BindVertexArray(VAO)
 		//gl.DrawArrays(gl.TRIANGLES, 0, 3)
