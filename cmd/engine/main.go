@@ -76,12 +76,12 @@ func main() {
 	//}
 
 	// Using Element Buffer objects to not specify verticies twice
-	vertices := [24]float32 {
-		// positions     // colors
-	 	 0.5,  0.5, 0.0, 1.0, 0.0, 0.0, // top right
-		 0.5, -0.5, 0.0, 1.0, 1.0, 0.0, // bottom right
-		-0.5, -0.5, 0.0, 0.0, 1.0, 0.0, // bottom let
-		-0.5,  0.5, 0.0, 0.0, 1.0, 1.0, // top let
+	vertices := []float32 {
+		// positions     // colors      // texture
+	 	 0.5,  0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, // top right
+		 0.5, -0.5, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, // bottom right
+		-0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, // bottom left
+		-0.5,  0.5, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, // top left
 	}
 	indices := [6]int32 {
 		0, 1, 3,   // first triangle
@@ -98,7 +98,7 @@ func main() {
 	gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
 	// From now on any call on the ARRAY_BUFFER target will configure this bound buffer.
 	// Calling glBufferData will then copy the defined vertex data into the buffers memory
-	gl.BufferData(gl.ARRAY_BUFFER, len(vertices) << 2, unsafe.Pointer(&vertices), gl.STATIC_DRAW)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices) << 2, unsafe.Pointer(&vertices[0]), gl.STATIC_DRAW)
 
 	// Bind EBO
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO)
@@ -106,16 +106,36 @@ func main() {
 
 	// Tell OpenGL how to interpret our vertex data
 	// This uses our VBO because its still bound to ARRAY_BUFFER from before
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 6 * 4, unsafe.Pointer(nil))
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 8 * 4, unsafe.Pointer(nil))
 	gl.EnableVertexAttribArray(0)
 
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6 * 4, gl.PtrOffset(3*4))
+	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 8 * 4, gl.PtrOffset(3*4))
 	gl.EnableVertexAttribArray(1)
+	// Texture parameters
+	gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 8 * 4, gl.PtrOffset(6*4))
+	gl.EnableVertexAttribArray(2)
 
+	// Generate and apply texture
+	// ------------------------------------
+	texture, err := graphics.NewTexture2D(
+		"cmd/engine/textures/container.jpg",
+		gl.REPEAT,
+		gl.REPEAT,
+		gl.LINEAR,
+		gl.LINEAR)
+
+	if err != nil {
+		log.Fatalf("failed to load texture: %v", err)
+	}
+
+	// Deffered Cleanup
+	// -----------------------
 	defer gl.DeleteVertexArrays(1, &VAO)
 	defer gl.DeleteBuffers(1, &VBO)
 	defer shader.Delete()
 
+	// Loop
+	// --------------
 	for !window.ShouldClose() {
 		// input
 		processInput(window)
@@ -129,8 +149,7 @@ func main() {
 		// will now use this program.
 		shader.Use()
 
-		shader.SetFloat("something", 1.0)
-
+		texture.Use()
 		gl.BindVertexArray(VAO)
 		//gl.DrawArrays(gl.TRIANGLES, 0, 3)
 		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, unsafe.Pointer(nil))
