@@ -2,18 +2,21 @@ package graphics
 
 import (
 	"github.com/go-gl/gl/v4.6-core/gl"
+	"image"
 	"log"
 	"unsafe"
 	"voxel/pkg/ld"
+	"voxel/pkg/mu"
 )
 
 type Texture2D struct {
 	Id uint32
 }
 
-func NewTexture2D(texturePath string, wrapS, wrapT, minFilter, magFilter int32) (*Texture2D, error) {
+func NewTexture2D(texturePath string, wrapS, wrapT, minFilter, magFilter int32, activeTexture uint32, rotationDegrees float64) (*Texture2D, error) {
 	var texture uint32
 	gl.GenTextures(1, &texture)
+	gl.ActiveTexture(activeTexture)
 	gl.BindTexture(gl.TEXTURE_2D, texture)
 	// Set the texture wrapping/filtering options
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS)
@@ -21,7 +24,15 @@ func NewTexture2D(texturePath string, wrapS, wrapT, minFilter, magFilter int32) 
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter)
 	// Load the actual image data
-	rgba, err := ld.LoadImageData(texturePath)
+	var rgba *image.RGBA
+	var err error
+
+	if rotationDegrees == 0 {
+		rgba, err = ld.LoadImageData(texturePath)
+	} else {
+		rgba, err = ld.LoadImageDataRotate(texturePath, mu.DegreeToRadian(rotationDegrees))
+	}
+
 	if err != nil {
 		log.Printf("failed to load texture:\n %v", err)
 		return nil, err
@@ -50,5 +61,10 @@ func NewTexture2D(texturePath string, wrapS, wrapT, minFilter, magFilter int32) 
 
 // Use/activate the texture
 func (t *Texture2D) Use() {
+	gl.BindTexture(gl.TEXTURE_2D, t.Id)
+}
+
+func (t *Texture2D) UseActive(active uint32) {
+	gl.ActiveTexture(active)
 	gl.BindTexture(gl.TEXTURE_2D, t.Id)
 }

@@ -122,7 +122,18 @@ func main() {
 		gl.REPEAT,
 		gl.REPEAT,
 		gl.LINEAR,
-		gl.LINEAR)
+		gl.LINEAR,
+		0,
+		0)
+
+	texture2, err := graphics.NewTexture2D(
+		"cmd/engine/textures/awesomeface.png",
+		gl.REPEAT,
+		gl.REPEAT,
+		gl.LINEAR,
+		gl.LINEAR,
+		1,
+		180)
 
 	if err != nil {
 		log.Fatalf("failed to load texture: %v", err)
@@ -133,6 +144,11 @@ func main() {
 	defer gl.DeleteVertexArrays(1, &VAO)
 	defer gl.DeleteBuffers(1, &VBO)
 	defer shader.Delete()
+
+	// Tell OpenGL which texture unit each shader sampler belongs to.
+	shader.Use()
+	shader.SetInt("texture1", 0)
+	shader.SetInt("texture2", 1)
 
 	// Loop
 	// --------------
@@ -149,7 +165,8 @@ func main() {
 		// will now use this program.
 		shader.Use()
 
-		texture.Use()
+		texture.UseActive(gl.TEXTURE0)
+		texture2.UseActive(gl.TEXTURE1)
 		gl.BindVertexArray(VAO)
 		//gl.DrawArrays(gl.TRIANGLES, 0, 3)
 		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, unsafe.Pointer(nil))
