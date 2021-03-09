@@ -127,7 +127,9 @@ func main() {
 		// Draw triangle
 		// We now activate this shader program. Every shader and rendering call after this
 		// will now use this program.
-		gl.UseProgram(shader.Id)
+		shader.Use()
+
+		shader.SetFloat("something", 1.0)
 
 		gl.BindVertexArray(VAO)
 		//gl.DrawArrays(gl.TRIANGLES, 0, 3)

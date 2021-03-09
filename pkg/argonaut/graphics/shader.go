@@ -96,7 +96,7 @@ func (s *Shader) Use() {
 // Uniform utility functions
 
 func (s *Shader) SetBool(name string, value bool) {
-	var ibool int32 = 0
+	var ibool int32
 	if value {
 		ibool = 1
 	}
