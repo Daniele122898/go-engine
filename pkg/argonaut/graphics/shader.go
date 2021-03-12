@@ -3,6 +3,7 @@ package graphics
 import (
 	"errors"
 	"github.com/go-gl/gl/v4.6-core/gl"
+	"github.com/go-gl/mathgl/mgl32"
 	"io/ioutil"
 	"log"
 	"voxel/pkg/su"
@@ -109,6 +110,14 @@ func (s *Shader) SetInt(name string, value int32) {
 
 func (s *Shader) SetFloat(name string, value float32) {
 	gl.Uniform1f(gl.GetUniformLocation(s.Id, su.CStr(name)), value)
+}
+
+func (s *Shader) SetMatrix4f(name string, value mgl32.Mat4) {
+	gl.UniformMatrix4fv(s.GetUniformLocation(name), 1, false, &value[0])
+}
+
+func (s *Shader) GetUniformLocation(uniform string) int32 {
+	return gl.GetUniformLocation(s.Id, su.CStr(uniform))
 }
 
 

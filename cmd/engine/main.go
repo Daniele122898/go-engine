@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/go-gl/gl/v4.6-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
+	"github.com/go-gl/mathgl/mgl32"
 	"log"
 	"runtime"
 	"unsafe"
@@ -44,7 +45,7 @@ func main() {
 		log.Fatal("failed to initialize glad/gl:\n", err)
 	}
 
-	gl.Viewport(0,0,1280,720)
+	gl.Viewport(0, 0, 1280, 720)
 	// Register callback in case user changes the window size so gl can update the viewport.
 	window.SetFramebufferSizeCallback(FramebufferSizeCallback)
 
@@ -54,7 +55,6 @@ func main() {
 	if err != nil {
 		log.Fatal("shader creation failed", err)
 	}
-
 
 	// Setup Verted data and buffers etc
 	// ------------------------------------
@@ -76,16 +76,16 @@ func main() {
 	//}
 
 	// Using Element Buffer objects to not specify verticies twice
-	vertices := []float32 {
+	vertices := []float32{
 		// positions     // colors      // texture
-	 	 0.5,  0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, // top right
-		 0.5, -0.5, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, // bottom right
+		0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, // top right
+		0.5, -0.5, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, // bottom right
 		-0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, // bottom left
-		-0.5,  0.5, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, // top left
+		-0.5, 0.5, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, // top left
 	}
-	indices := [6]int32 {
-		0, 1, 3,   // first triangle
-		1, 2, 3,    // second triangle
+	indices := [6]int32{
+		0, 1, 3, // first triangle
+		1, 2, 3, // second triangle
 	}
 
 	// Tell opengl to create 1 buffer and pass us the ID
@@ -98,21 +98,21 @@ func main() {
 	gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
 	// From now on any call on the ARRAY_BUFFER target will configure this bound buffer.
 	// Calling glBufferData will then copy the defined vertex data into the buffers memory
-	gl.BufferData(gl.ARRAY_BUFFER, len(vertices) << 2, unsafe.Pointer(&vertices[0]), gl.STATIC_DRAW)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)<<2, unsafe.Pointer(&vertices[0]), gl.STATIC_DRAW)
 
 	// Bind EBO
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices) << 2, unsafe.Pointer(&indices), gl.STATIC_DRAW)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)<<2, unsafe.Pointer(&indices), gl.STATIC_DRAW)
 
 	// Tell OpenGL how to interpret our vertex data
 	// This uses our VBO because its still bound to ARRAY_BUFFER from before
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 8 * 4, unsafe.Pointer(nil))
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 8*4, unsafe.Pointer(nil))
 	gl.EnableVertexAttribArray(0)
 
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 8 * 4, gl.PtrOffset(3*4))
+	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 8*4, gl.PtrOffset(3*4))
 	gl.EnableVertexAttribArray(1)
 	// Texture parameters
-	gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 8 * 4, gl.PtrOffset(6*4))
+	gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 8*4, gl.PtrOffset(6*4))
 	gl.EnableVertexAttribArray(2)
 
 	// Generate and apply texture
@@ -150,6 +150,13 @@ func main() {
 	shader.SetInt("texture1", 0)
 	shader.SetInt("texture2", 1)
 
+	// Math and transformations
+	// --------------
+	//trans := mgl32.Ident4()
+	//trans = trans.Mul4(mgl32.Translate3D(0.5, -0.5, 0.0))
+	//trans = trans.Mul4(mgl32.HomogRotate3DZ(float32(glfw.GetTime())))
+	//trans = trans.Mul4(mgl32.Scale3D(0.5, 0.5, 0.5))
+
 	// Loop
 	// --------------
 	for !window.ShouldClose() {
@@ -164,6 +171,10 @@ func main() {
 		// We now activate this shader program. Every shader and rendering call after this
 		// will now use this program.
 		shader.Use()
+		trans := mgl32.Ident4()
+		trans = trans.Mul4(mgl32.Translate3D(0.5, -0.5, 0.0))
+		trans = trans.Mul4(mgl32.HomogRotate3DZ(float32(glfw.GetTime())))
+		shader.SetMatrix4f("transform", trans)
 
 		texture.UseActive(gl.TEXTURE0)
 		texture2.UseActive(gl.TEXTURE1)
@@ -191,5 +202,5 @@ func processInput(w *glfw.Window) {
 }
 
 func FramebufferSizeCallback(_ *glfw.Window, width int, height int) {
-	gl.Viewport(0,0, int32(width), int32(height))
+	gl.Viewport(0, 0, int32(width), int32(height))
 }

@@ -30,7 +30,7 @@ func NewTexture2D(texturePath string, wrapS, wrapT, minFilter, magFilter int32, 
 	if rotationDegrees == 0 {
 		rgba, err = ld.LoadImageData(texturePath)
 	} else {
-		rgba, err = ld.LoadImageDataRotate(texturePath, mu.DegreeToRadian(rotationDegrees))
+		rgba, err = ld.LoadImageDataRotate(texturePath, mu.DegreeToRadian64(rotationDegrees))
 	}
 
 	if err != nil {
