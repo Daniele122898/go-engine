@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"unsafe"
 	"voxel/pkg/argonaut/graphics"
+	"voxel/pkg/mu"
 )
 
 // Called first
@@ -49,6 +50,8 @@ func main() {
 	// Register callback in case user changes the window size so gl can update the viewport.
 	window.SetFramebufferSizeCallback(FramebufferSizeCallback)
 
+	gl.Enable(gl.DEPTH_TEST)
+
 	// Dynamically compile the shaders
 	// -------------------------------
 	shader, err := graphics.NewShader("cmd/engine/shaders/simple_vert.glsl", "cmd/engine/shaders/simple_frag.glsl")
@@ -76,13 +79,59 @@ func main() {
 	//}
 
 	// Using Element Buffer objects to not specify verticies twice
+	//vertices := []float32{
+	//	// positions     // colors      // texture
+	//	0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, // top right
+	//	0.5, -0.5, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, // bottom right
+	//	-0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, // bottom left
+	//	-0.5, 0.5, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, // top left
+	//}
+
+	// Vertices for a cube
 	vertices := []float32{
-		// positions     // colors      // texture
-		0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, // top right
-		0.5, -0.5, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, // bottom right
-		-0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, // bottom left
-		-0.5, 0.5, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, // top left
+		-0.5, -0.5, -0.5, 0.0, 0.0,
+		0.5, -0.5, -0.5, 1.0, 0.0,
+		0.5, 0.5, -0.5, 1.0, 1.0,
+		0.5, 0.5, -0.5, 1.0, 1.0,
+		-0.5, 0.5, -0.5, 0.0, 1.0,
+		-0.5, -0.5, -0.5, 0.0, 0.0,
+
+		-0.5, -0.5, 0.5, 0.0, 0.0,
+		0.5, -0.5, 0.5, 1.0, 0.0,
+		0.5, 0.5, 0.5, 1.0, 1.0,
+		0.5, 0.5, 0.5, 1.0, 1.0,
+		-0.5, 0.5, 0.5, 0.0, 1.0,
+		-0.5, -0.5, 0.5, 0.0, 0.0,
+
+		-0.5, 0.5, 0.5, 1.0, 0.0,
+		-0.5, 0.5, -0.5, 1.0, 1.0,
+		-0.5, -0.5, -0.5, 0.0, 1.0,
+		-0.5, -0.5, -0.5, 0.0, 1.0,
+		-0.5, -0.5, 0.5, 0.0, 0.0,
+		-0.5, 0.5, 0.5, 1.0, 0.0,
+
+		0.5, 0.5, 0.5, 1.0, 0.0,
+		0.5, 0.5, -0.5, 1.0, 1.0,
+		0.5, -0.5, -0.5, 0.0, 1.0,
+		0.5, -0.5, -0.5, 0.0, 1.0,
+		0.5, -0.5, 0.5, 0.0, 0.0,
+		0.5, 0.5, 0.5, 1.0, 0.0,
+
+		-0.5, -0.5, -0.5, 0.0, 1.0,
+		0.5, -0.5, -0.5, 1.0, 1.0,
+		0.5, -0.5, 0.5, 1.0, 0.0,
+		0.5, -0.5, 0.5, 1.0, 0.0,
+		-0.5, -0.5, 0.5, 0.0, 0.0,
+		-0.5, -0.5, -0.5, 0.0, 1.0,
+
+		-0.5, 0.5, -0.5, 0.0, 1.0,
+		0.5, 0.5, -0.5, 1.0, 1.0,
+		0.5, 0.5, 0.5, 1.0, 0.0,
+		0.5, 0.5, 0.5, 1.0, 0.0,
+		-0.5, 0.5, 0.5, 0.0, 0.0,
+		-0.5, 0.5, -0.5, 0.0, 1.0,
 	}
+
 	indices := [6]int32{
 		0, 1, 3, // first triangle
 		1, 2, 3, // second triangle
@@ -106,14 +155,12 @@ func main() {
 
 	// Tell OpenGL how to interpret our vertex data
 	// This uses our VBO because its still bound to ARRAY_BUFFER from before
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 8*4, unsafe.Pointer(nil))
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, unsafe.Pointer(nil))
 	gl.EnableVertexAttribArray(0)
 
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 8*4, gl.PtrOffset(3*4))
-	gl.EnableVertexAttribArray(1)
 	// Texture parameters
-	gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 8*4, gl.PtrOffset(6*4))
-	gl.EnableVertexAttribArray(2)
+	gl.VertexAttribPointer(1, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
+	gl.EnableVertexAttribArray(1)
 
 	// Generate and apply texture
 	// ------------------------------------
@@ -152,35 +199,71 @@ func main() {
 
 	// Math and transformations
 	// --------------
-	//trans := mgl32.Ident4()
-	//trans = trans.Mul4(mgl32.Translate3D(0.5, -0.5, 0.0))
-	//trans = trans.Mul4(mgl32.HomogRotate3DZ(float32(glfw.GetTime())))
-	//trans = trans.Mul4(mgl32.Scale3D(0.5, 0.5, 0.5))
+	// Model matrix that is kinda on the ground on the x axis
+	//model := mgl32.HomogRotate3DX(float32(glfw.GetTime()) * mgl32.DegToRad(-55))
+	// pretend like our camera goes back which is the same as moving the entire
+	// world back in the -z axis
+	view := mgl32.Translate3D(0, 0, -3)
+	// Create projection matrix
+	proj := mgl32.Perspective(mgl32.DegToRad(45), 1280.0/720.0, 0.1, 100)
+	vp := proj.Mul4(view)
+
+	cubePos := [][3]float32{
+		{0.0, 0.0, 0.0},
+		{2.0, 5.0, -15.0},
+		{-1.5, -2.2, -2.5},
+		{-3.8, -2.0, -12.3},
+		{2.4, -0.4, -3.5},
+		{-1.7, 3.0, -7.5},
+		{1.3, -2.0, -2.5},
+		{1.5, 2.0, -2.5},
+		{1.5, 0.2, -1.5},
+		{-1.3, 1.0, -1.5},
+	}
 
 	// Loop
 	// --------------
 	for !window.ShouldClose() {
+
 		// input
 		processInput(window)
 
 		// rendering commands
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
-		gl.Clear(gl.COLOR_BUFFER_BIT)
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		// Draw triangle
 		// We now activate this shader program. Every shader and rendering call after this
 		// will now use this program.
 		shader.Use()
-		trans := mgl32.Ident4()
-		trans = trans.Mul4(mgl32.Translate3D(0.5, -0.5, 0.0))
-		trans = trans.Mul4(mgl32.HomogRotate3DZ(float32(glfw.GetTime())))
-		shader.SetMatrix4f("transform", trans)
+		//trans := mgl32.Ident4()
+		//trans = trans.Mul4(mgl32.Translate3D(0.5, -0.5, 0.0))
+		//trans = trans.Mul4(mgl32.HomogRotate3DZ(float32(glfw.GetTime())))
+		//shader.SetMatrix4f("transform", trans)
+
+		//model := mgl32.HomogRotate3DX(float32(glfw.GetTime()) * mgl32.DegToRad(50))
+		//model = model.Mul4(mgl32.HomogRotate3DY(float32(glfw.GetTime()) * mgl32.DegToRad(50)))
+		//mvp := vp.Mul4(model)
+
+		// Send projection matrices
 
 		texture.UseActive(gl.TEXTURE0)
 		texture2.UseActive(gl.TEXTURE1)
 		gl.BindVertexArray(VAO)
-		//gl.DrawArrays(gl.TRIANGLES, 0, 3)
-		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, unsafe.Pointer(nil))
+
+		for i, pos := range cubePos {
+			model := mgl32.Translate3D(pos[0], pos[1], pos[2])
+			angle := float32(20.0 * i)
+			//model = model.Mul4(mgl32.HomogRotate3DX(mgl32.DegToRad(angle)))
+			model = model.Mul4(mu.MultiRotate3D(mgl32.DegToRad(angle), 1, 0.3, 0.5))
+			mvp := vp.Mul4(model)
+			shader.SetMatrix4f("mvp", mvp)
+			gl.DrawArrays(gl.TRIANGLES, 0, 36)
+		}
+
+
+		//gl.DrawArrays(gl.TRIANGLES, 0, 36)
+		//gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, unsafe.Pointer(nil))
 
 		// check and call events and swap the buffers
 		window.SwapBuffers()
